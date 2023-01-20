@@ -24,7 +24,7 @@ class SelfAttention(nn.Module):
 
         num_samples, num_tokens, dims = x.shape
         qkv = self.qkv(x)
-        qkv = qkv.reshape(num_samples, num_tokens, 3, self.args.attn_heads, self.head_dims)
+        qkv = qkv.reshape(num_samples, num_tokens, 3, self.args.attn_heads, self.head_dims) 
         qkv = qkv.permute(2,0,3,1,4)
         q, k ,v = qkv[0], qkv[1], qkv[2]
 

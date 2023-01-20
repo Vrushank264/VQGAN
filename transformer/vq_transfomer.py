@@ -1,9 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as fun
+import sys
+sys.path.append('..')
 
-from mingpt import MinGPT
-from ..vqgan import VQGAN
+from .mingpt import MinGPT
+from vqgan import VQGAN
 
 
 class Transformer(nn.Module):
@@ -76,3 +78,31 @@ class Transformer(nn.Module):
         self.gpt.train()
         return x
 
+    
+    @torch.no_grad()
+    def log_imgs(self, x):
+
+        imgs = {}
+        imgs['input'] = x
+
+        _, idxs = self.encode(x)
+        sos_tokens = torch.ones(x.shape[0], 1) * self.args.sos_token
+        sos_tokens = sos_tokens.long().cuda()
+
+        start_idx = idxs[: , :idxs.shape[1] // 2]
+        sample_idxs = self.sample(start_idx, sos_tokens, steps = idxs.shape[1] - start_idx.shape[1])
+        half_sample = self.z_to_img(sample_idxs)
+
+        start_idx = idxs[:, :0]
+        sample_idxs = self.sample(start_idx, sos_tokens, steps = idxs.shape[1])
+        full_sample = self.z_to_img(sample_idxs)
+
+        gen_img = self.z_to_img(idxs)
+
+        imgs['generated_image'] = gen_img
+        imgs['half_sample'] = half_sample
+        imgs['full_sample'] = full_sample
+
+        concated_img = torch.cat((x, half_sample, full_sample, gen_img))
+
+        return imgs, concated_img        
